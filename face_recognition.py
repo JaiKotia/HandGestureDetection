@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jul 29 11:59:20 2018
 
-@author: jai
 """
 
 from keras.models import Sequential
@@ -29,6 +27,7 @@ INIT_LR = 1e-3
 BS = 2
 
 model = Sequential()
+
 inputShape = (28, 28, 1)
    
 model.add(Conv2D(20, (5, 5), padding="same",	input_shape=inputShape))
@@ -76,14 +75,13 @@ def capture_image():
             fname = input("File name")
             cv2.imwrite('{}.jpg'.format(fname), roi)
         
+
+capture_image()
         
 cv2.destroyAllWindows()
 
-video.release()
 
 bg_img = cv2.imread('face_bg.jpg')
-
-current_frame_img = cv2.imread('current.jpg')
 
 def preprocess_image_v2(current_frame_img, bg_img):
     blur = cv2.GaussianBlur(current_frame_img, (15, 15), 2)
@@ -97,57 +95,11 @@ def preprocess_image_v2(current_frame_img, bg_img):
     th, mask_thresh = cv2.threshold(mask2, 10, 255, cv2.THRESH_BINARY)
     return mask_thresh
 
-def preprocess_image(current_frame_img, bg_img):
-    diff = cv2.absdiff(bg_img, current_frame_img)
-    mask = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-    th, mask_thresh = cv2.threshold(mask, 10, 255, cv2.THRESH_BINARY)
-    plot_image(mask_thresh)
-    return mask_thresh
-
-def bgrtorgb(image):
-    return cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
-
-
 def plot_image(image, figsize=(8,8), recolour=False):
     if image.shape[-1] == 1 or len(image.shape) == 2:
         plt.imshow(image, cmap='gray')
     else:
         raise Exception("Image has invalid shape.")
-
-mask_thresh = preprocess_image(current_frame_img, bg_img)
-plot_image(mask_thresh)
-masked = cv2.resize(mask_thresh, (300, 300))
-
-plot_image(masked)
-#Capture images
-def capture_image():
-    video = cv2.VideoCapture(0)
-    bbox_initial = (200, 100, 250, 250)
-    bbox = bbox_initial
-    
-    while True:
-        success, frame = video.read()
-        display = frame.copy()
-        p1 = (int(bbox[0]), int(bbox[1]))
-        p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-        cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
-        
-        roi = frame[100:350, 200:450]    
-    
-        if not success:
-            break
-            
-        cv2.imshow("frame", frame)
-        
-        k = cv2.waitKey(1) & 0xff
-        if k == 27:# escape pressed 
-            break
-        elif k == 115: # s pressed
-            fname = input("File name")
-            cv2.imwrite('{}.jpg'.format(fname), roi)
-
-import cv2        
-capture_image()
 
 path=os.getcwd()+'/'
 print(path)
@@ -178,19 +130,9 @@ labels = np.array(labels)
 trainY = to_categorical(trainY, num_classes=2)
 testY = to_categorical(testY, num_classes=2)    
 
-aug = ImageDataGenerator(rotation_range=30, width_shift_range=0.1,
-	height_shift_range=0.1, shear_range=0.2, zoom_range=0.2,
-	horizontal_flip=True, fill_mode="nearest")
-
 opt = Adam(lr=INIT_LR, decay=INIT_LR / EPOCHS)
 model.compile(loss="binary_crossentropy", optimizer=opt,
 	metrics=["accuracy"])
- 
-# train the network
-print("[INFO] training network...")
-H = model.fit_generator(aug.flow(trainX, trainY, batch_size=BS),
-	validation_data=(testX, testY), steps_per_epoch=len(trainX) // BS,
-	epochs=EPOCHS, verbose=1)
 
 print("[INFO] training network...")
 H=model.fit(trainX, trainY,
@@ -210,33 +152,6 @@ plt.plot(np.arange(0, N), H.history["loss"], label="train_loss")
 plt.plot(np.arange(0, N), H.history["val_loss"], label="val_loss")
 plt.plot(np.arange(0, N), H.history["acc"], label="train_acc")
 
-
-#Capture images
-def capture_image():
-    video = cv2.VideoCapture(0)
-    bbox_initial = (200, 100, 250, 250)
-    bbox = bbox_initial
-    
-    while True:
-        success, frame = video.read()
-        display = frame.copy()
-        p1 = (int(bbox[0]), int(bbox[1]))
-        p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-        cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
-        
-        roi = frame[100:350, 200:450]    
-    
-        if not success:
-            break
-            
-        cv2.imshow("frame", frame)
-        
-        k = cv2.waitKey(1) & 0xff
-        if k == 27:# escape pressed 
-            break
-        elif k == 115: # s pressed
-            fname = input("File name")
-            cv2.imwrite('{}.jpg'.format(fname), roi)
         
 plt.plot(np.arange(0, N), H.history["val_acc"], label="val_acc")
 plt.title("Training Loss and Accuracy on Dataset")
@@ -255,52 +170,20 @@ def classify_image(image):
     image = img_to_array(image)
     image = np.expand_dims(image, axis=0)
     
-    (jai, advait) = model.predict(image)[0]
+    (chirag, advait) = model.predict(image)[0]
     
-    label = "Advait" if advait > jai else "Jai"
-    proba = advait if advait > jai else jai
+    label = "Advait" if advait > chirag else "Chirag"
+    proba = advait if advait > chirag else chirag
     label = "{}: {:.2f}%".format(label, proba * 100)
     print(label)
      
     # draw the label on the image
     output = imutils.resize(orig, width=400)
     cv2.putText(output, label, (10, 25),  cv2.FONT_HERSHEY_SIMPLEX,
-    	0.7, (255, 255, 255), 2)
+    	0.7, (0, 0, 0), 2)
      
     # show the output image
     cv2.imshow("Output", output)
 
-
-
-##### EXECUTE FOR PRESENTATION
-
-import cv2
-
-def classify_image(image):
-    image = preprocess_image_v2(image, bg_img)
-    orig = image.copy()
-    
-    image = cv2.resize(image, (28, 28))
-    
-    image = image.astype("float") / 255.0
-    image = img_to_array(image)
-    image = np.expand_dims(image, axis=0)
-    
-    (jai, advait) = model.predict(image)[0]
-    
-    label = "Advait" if advait > jai else "Jai"
-    proba = advait if advait > jai else jai
-    label = "{}: {:.2f}%".format(label, proba * 100)
-    print(label)
-     
-    # draw the label on the image
-    output = imutils.resize(orig, width=400)
-    cv2.putText(output, label, (10, 25),  cv2.FONT_HERSHEY_SIMPLEX,
-    	0.7, (255, 255, 255), 2)
-     
-    # show the output image
-    cv2.imshow("Output", output)
-
-
-image = cv2.imread('jtest2.jpg')
+image = cv2.imread('ctest2.jpg')
 classify_image(image)
